@@ -1,0 +1,118 @@
+
+[*] base				: Minimal package set to define a basic Arch Linux installation
+[*] base-devel			
+[*] linux-firmware			: Firmware files for Linux
+
+[*] linux-zen				: The Linux ZEN kernel and modules
+[*] linux-zen-headers			: Headers and scripts for building modules for the Linux ZEN kernel
+
+[*] intel-ucode				: Microcode update files for Intel CPUs
+[*] xf86-video-intel			: X.org Intel i810/i830/i915/945G/G965+ video drivers
+
+[*] xorg-server				: Xorg X server
+[*] xorg-xinit				: X.Org initialisation program
+[*] xorg-xbacklight			: RandR-based backlight control application
+[*] xorg-apps				
+[*] xdg-utils 				: Command line tools that assist applications with a variety of desktop integration tasks
+[*] xdg-user-dirs			: Manage user directories like ~/Desktop and ~/Music
+[*] xclip				: Command line interface to the X11 clipboard
+
+[*] pipewire 				: Low-latency audio/video router and processor
+[*] pipewire-jack 			: Low-latency audio/video router and processor - JACK support
+[*] pipewire-alsa 			: Low-latency audio/video router and processor - ALSA configuration
+[*] pipewire-pulse			: Low-latency audio/video router and processor - PulseAudio replacement
+[*] pulsemixer 				: CLI and curses mixer for pulseaudio
+
+[*] bspwm				: Tiling window manager based on binary space partitioning
+[*] sxhkd				: Simple X hotkey daemon
+
+[*] openbox				: Highly configurable and lightweight X11 window manager
+[A] obmenu-generator			: A fast pipe/static menu generator for the Openbox Window Manager (with icons support).
+
+[*] htop				: Interactive process viewer
+[*] sxiv				: Simple X Image Viewer
+[*] git					: the fast distributed version control system
+[*] aria2 				: Download utility that supports HTTP(S), FTP, BitTorrent, and Metalink
+[ ] transmission-gtk 			
+[*] zola				: An opinionated static site generator
+[*] ranger				: Simple, vim-like file manager
+[*] rofi 				: A window switcher, application launcher and dmenu replacement
+[*] rofi-calc 				: Do calculations in rofi
+[*] rofi-emoji 				: A Rofi plugin for selecting emojis
+[*] rofimoji				: Character picker for rofi
+[*] rofi-pass 				: bash script to handle pass storages in a convenient way
+[*] dmenu				: Generic menu for X
+[*] fzf					: Command-line fuzzy finder
+[A] polybar				: A fast and easy-to-use status bar
+[*] tint2
+[*] dunst				: Customizable and lightweight notification-daemon
+[*] betterlockscreen			: A simple, minimal lockscreen
+[*] feh					: Fast and light imlib2-based image viewer
+[G] fm6000
+[A] picom-ibhagwan-git			: iBhagwan's compton|picom fork (X compositor) with dual_kawase blur and rounded corners
+[A] xfce-polkit				: A simple PolicyKit authentication agent for XFCE
+[*] quickemu				: Quickly create and run optimised Windows, macOS and Linux desktop virtual machines.
+[*] colorpicker				: Click on a pixel on your screen and print its color value in RGB. Written for X11.
+[*] clipmenu				: Clipboard management using dmenu
+[*] inotify-tools			: inotify-tools is a C library and a set of command-line programs for Linux providing a simple interface to inotify.
+[*] man-db				: A utility for reading man pages	
+[*] zip					: Compressor/archiver for creating and modifying zipfiles
+[*] unzip				: For extracting and viewing files in .zip archives
+[*] 7-zip				: File archiver with a high compression ratio
+[*] ueberzug				: Command line util which allows to display images in combination with X11
+[*] tlp					: Linux Advanced Power Management
+[*] yt-dlp				: A youtube-dl fork with additional features and fixes
+[*] dash				: POSIX compliant shell that aims to be as small as possible
+[*] tmate                               : Instant terminal sharing
+
+[*] archcraft-backgrounds-minimal	: Minimal wallpapers for Archcraft
+[*] archcraft-backgrounds-nature	: Nature wallpapers for Archcraft
+[*] archcraft-backgrounds-extra		: Extra wallpapers for Archcraft
+[*] archcraft-cursor-vimix		: Vimix Cursor theme for Archcraft
+[*] archcraft-gtk-theme-kripton		: Kripton gtk theme for Archcraft
+[*] archcraft-icons-papirus		: Papirus Icon theme for Archcraft
+[*] papirus-icon-theme			: Papirus icon theme
+[*] lxappearance			: Feature-rich GTK+ theme switcher of the LXDE Desktop
+[*] qt5ct				: Qt5 Configuration Utility
+ 	
+[*] archcraft-fonts			: Fonts for Archcraft
+[*] ttf-dejavu 
+[*] ttf-liberation
+[*] ttf-font-awesome			: Iconic font designed for Bootstrap
+
+[G] starship
+
+[A] stremio-beta                        : Watch videos, movies, TV series and TV channels instantly.
+[*] mpv					: a free, open source, and cross-platform media player
+[*] mpd					: Flexible, powerful, server-side application for playing music
+[*] mpc					: Minimalist command line interface to MPD
+[*] ncmpcpp				: Almost exact clone of ncmpc with some new features
+ 
+[*] alacritty				: A cross-platform, GPU-accelerated terminal emulator
+[*] kitty				: A modern, hackable, featureful, OpenGL-based terminal emulator
+[ ] st					
+[*] xfce4-terminal 			: A modern terminal emulator primarily for the Xfce desktop environment
+
+[*] pcmanfm				: Extremely fast and lightweight file manager
+[ ] caja				
+[*] mate-calc				: Calculator for the MATE desktop environment
+[*] plank				: Elegant, simple, clean dock
+[*] maim 				: Utility to take a screenshot using imlib2
+ 		
+[*] firefox				: Standalone web browser from mozilla.org
+[A] google-chrome			: The popular and trusted web browser by Google (Stable Channel)
+
+[ ] vscodium				
+[*] vim					: Vi Improved, a highly configurable, improved version of the vi text editor
+[*] leafpad				: A notepad clone for GTK+ 2.0
+[*] micro				: Modern and intuitive terminal-based text editor
+ 	
+[A] simple-mtpfs			: A FUSE filesystem that supports reading/writing from MTP devices 
+[*] gparted				: A Partition Magic clone, frontend to GNU Parted
+[*] gnome-disk-utility			: Disk Management Utility for GNOME
+
+[*] deja-dup				: Simple backup tool, that hides the complexity of backing up the Right Way and uses duplicity as the backend
+[A] timeshift				: A system restore utility for Linux
+[A] update-grub				: Simple wrapper around grub-mkconfig
+[G] baph				: Simple light wight Aur helper Written in bash
+

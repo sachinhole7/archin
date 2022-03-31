@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# get package file
+# wget https://sachinhole.xyz/archin/pkg.txt
+
+# wrapper to print out 
+ say(){ echo -e "\033[0;33m${*}\033[0;33m"
+ }
+
+say === this script is to install archlinux and setup user then configur archin desktop
+
+ DISK=/dev/nvme0n1
+ BOOT_PART=/dev/nvme0n1p1
+ ROOT_PART=/dev/nvme0n1p2
+
+say === formate EFI partition 'yes' or 'no'
+ EFI_FORMAT=no 
+
+ PACKAGES_LIST=pkg.txt
+
+say === create partition by using
+ cfdisk $DISK
+
+say === formate EFI/boot parition to vfat 'BOOT_PART'
+ [[ "${EFI_FORMAT}" == "Yes" ]] && mkfs.vfat ${BOOT_PART}
+
+say === formate 'root' partition to btrfs file system
+ mkfs.btrfs -f ${ROOT_PART} 
+
+say === mount 'root' partition
+ mount ${ROOT_PART} /mnt
+
+say === create btrfs subvolumes
+ btrfs su cr /mnt/@                                     # create root subvol
+ btrfs su cr /mnt/@home                                 # create home subvol
+ btrfs su cr /mnt/@var                                  # create var  subvol
+
+say === umount 'root' partition
+ umount /mnt
+
+say === mount btrfs 'root' subvolume
+ mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PART} /mnt
+
+say === create folders to mount home & var subvolumes
+ mkdir -p /mnt/{boot/efi,home,var}
+
+say === mount 'home' subvloume
+ mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home ${ROOT_PART} /mnt/home
+
+say === mount 'var' subvolume
+mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var ${ROOT_PART} /mnt/var
+
+say === mount 'EFI' partition
+ mount ${BOOT_PART} /mnt/boot/efi
+
+say === sync time
+ timedatectl set-ntp true
+
+say === install arch linux base
+ pacstrap /mnt $(awk '/^\[B\]/ {print $2}')
+
+say === generate an fstab file
+ genfstab -U /mnt >> /mnt/etc/fstab
+
+say === creat post script
+ awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
+
+say === arch-chroot
+ arch-chroot /mnt bash postinstall.sh
+
+say =======[ ARCH LINUX POST INSTALL ]================================================================================#
+#!/bin/bash
+
+read -p " Enter your userName: " userName
+read -p " Enter your hostName: " hostName
+read -p " Enter passWord: " passWord
+
+say === clear screen 
+ printf '\033c'
+
+say === Set time zone
+ ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+
+say === Run hwclock to generate /etc/adjtime
+ hwclock --systohc
+
+say === Edit /etc/locale.gen and uncomment en_US.UTF-8 UTF-8 and other needed locales.
+ echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+
+say === Generate the locales 
+ locale-gen
+
+say === Edit locale.conf
+ echo "LANG=en_US.UTF-8" > /etc/locale.conf
+
+say === Set the console keyboard layout
+ echo "KEYMAP=us" > /etc/vconsole.conf
+
+say === Set hostname
+ echo "${hostName}" > /etc/hostname
+
+say === Create /etc/hots file
+ echo "127.0.0.1       localhost"  > /etc/hosts
+ echo "::1             localhost" >> /etc/hosts
+ echo "127.0.1.1       ${hostName}.localdomain ${hostName}" >> /etc/hosts
+
+say === recreate the initramfs image
+ mkinitcpio -P
+
+say === Set root password
+ echo root:${passWord} | chpasswd
+
+say === Install grub bootloader
+ grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchGRUB
+ sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
+ grub-mkconfig -o /boot/grub/grub.cfg
+
+say === Create user
+ useradd -m -G wheel -s /bin/bash ${userName}
+
+say === Set user password
+ echo "${userName}:${passWord}" | chpasswd
+
+say === install arch packages
+ pacman --noconfirm --needed -S $(awk '/^\[*\]/ {print $2}' ${PACKAGE_LIST})
+
+say === Enable services to start at Boot
+ systemctl enable NetworkManager.service 
+ systemctl enable cronie.service
+
+
