@@ -1,0 +1,19 @@
+#!/bin/sh
+
+[ -z $1 ] && uname=$(whoami) || uname=$1
+
+autologin(){
+	[ -d /etc/systemd/system/getty@tty1.service.d ] || sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+	echo -e "[Service]
+Type=simple
+ExecStart=
+Environment=XDG_SESSION_TYPE=x11
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin $uname - \$TERM "  > autologin.conf  \
+&& sudo mv -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf
+	sudo systemctl enable getty@tty1.service.d
+}
+
+[ -f /etc/systemd/system/getty@tty1.service.d/autologin.conf ] || autologin
+
+echo -e " getty: autologin is done just add \" [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && startx \" in your ~/.bashrc or ~/.zshrc"
+
