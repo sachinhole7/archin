@@ -3,8 +3,8 @@
 # arch install script ][ btrfs filesytem
 
 # get package file
- [[ -f /usr/bin/curl ]] || sudo pacman --noconfirm -S curl 
- curl https://sachinxyz.github.io/pkg.txt -o pkg.txt
+# [[ -f /usr/bin/curl ]] || sudo pacman --noconfirm -S curl 
+# curl https://sachinxyz.github.io/pkg.txt -o pkg.txt
 
 # wrapper to print out 
  eco(){ echo -e "\e[93m${*}\e[0m"
@@ -68,9 +68,9 @@ eco === creat post script
  cp -f pkg.txt /mnt
 
 eco === arch-chroot
- arch-chroot /mnt bash -ec postinstall.sh
+ arch-chroot /mnt bash postinstall.sh
 
-eco =======[ ARCH LINUX POST INSTALL ]================================================================================#
+echo =======[ ARCH LINUX POST INSTALL ]================================================================================
 
 # wrapper to print out 
  eco(){ echo -e "\e[93m${*}\e[0m"
@@ -133,7 +133,7 @@ eco === Set user password
  echo "${userName}:${passWord}" | chpasswd
 
 eco === install arch packages
- pacman --noconfirm --needed -S $(awk '/^\[*\]/ {print $2}' ${PACKAGES_LIST})
+# pacman --noconfirm --needed -S $(awk '/^\[\*\]/ {print $2}' ${PACKAGES_LIST})
 
 eco === Enable services to start at Boot
  systemctl enable NetworkManager.service 
