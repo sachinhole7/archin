@@ -42,7 +42,7 @@ eco === umount 'root' partition
 eco === mount btrfs 'root' subvolume
  mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PART} /mnt
 
-eco === create folders to mount home & var subvolumes
+eco === create folders to mount home and var subvolumes
  mkdir -p /mnt/{boot/efi,home,var}
 
 eco === mount 'home' subvloume
