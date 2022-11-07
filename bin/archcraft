@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# reqiurment
+[ -f /usr/bin/wget ] || pacman -S --noconfirm wget
+
+# get archcraft-mirrorlist package
+
+if [ "archcraft-mirrorlist" != "$(pacman -Qq  archcraft-mirrorlist)" ]; then
+    wget https://github.com/archcraft-os/packages/raw/main/x86_64/archcraft-mirrorlist-1.0-2-any.pkg.tar.zst
+    pacman --noconfirm -U archcraft-mirrorlist*
+else echo " > package Alredy installed." 
+fi
+
+# set enty in pacman.conf file
+
+if [ -z $(grep "\[archcraft\]" /etc/pacman.conf) ]; then echo "
+[archcraft]
+SigLevel = Optional TrustAll
+Include = /etc/pacman.d/archcraft-mirrorlist
+" >> /etc/pacman.conf 
+else echo " > entry Already exits." 
+fi
+
