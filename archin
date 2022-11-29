@@ -1,145 +1,173 @@
 #!/bin/bash
 
-# arch install script ][ btrfs filesytem
+set -exn
+echo "= = =  arch linux installation script  = = =" 
 
-# get package file
-# [[ -f /usr/bin/curl ]] || sudo pacman --noconfirm -S curl 
-# curl https://sachinxyz.github.io/pkg.txt -o pkg.txt
+#  -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# wrapper to print out 
- eco(){ echo -e "\e[93m${*}\e[0m"
- }
+DISK=/dev/nvme0n1
+BOOT_PARTITION=${DISK}p1
+ROOT_PARTITION=${DISK}p2
+HOME_PARTITION=${DISK}p3
 
- set -e
+FORMATE_BOOT_PARTITION = yes
+FORMATE_ROOT_PARTITION = yes
+FORMATE_HOME_PARTITION = yes
+FILESYTEM_TYPE = ext4            # ext4 / btrfs
 
-eco "# === arch linux installation script" 
- DISK=/dev/nvme0n1
- BOOT_PART=${DISK}p1
- ROOT_PART=${DISK}p2
+# packages
+BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode grub efibootmgr networkmanager cronie git )
 
-eco === formate EFI partition 'yes' or 'no'
- EFI_FORMAT=yes
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- PACKAGES_LIST=pkg.txt
+# formate EFI/boot parition to vfat 'BOOT_PARTITION'
+[[ "${FORMATE_BOOT_PARTITION}" == "yes" ]] && mkfs.vfat ${BOOT_PARTITION}
 
-eco === formate EFI/boot parition to vfat 'BOOT_PART'
- [[ "${EFI_FORMAT}" == "yes" ]] && mkfs.vfat ${BOOT_PART}
+btrfs_fstype() {
+   # formate 'root' partition to btrfs file system
+   mkfs.btrfs -f ${ROOT_PARTITION} 
 
-eco === formate 'root' partition to btrfs file system
- mkfs.btrfs -f ${ROOT_PART} 
+   # mount 'root' partition
+   mount ${ROOT_PARTITION} /mnt
 
-eco === mount 'root' partition
- mount ${ROOT_PART} /mnt
+   # create btrfs subvolumes
+   btrfs su cr /mnt/@                                     # create root subvol
+   btrfs su cr /mnt/@home                                 # create home subvol
+   btrfs su cr /mnt/@var                                  # create var  subvol
 
-eco === create btrfs subvolumes
- btrfs su cr /mnt/@                                     # create root subvol
- btrfs su cr /mnt/@home                                 # create home subvol
- btrfs su cr /mnt/@var                                  # create var  subvol
+   # umount 'root' partition
+   umount /mnt
 
-eco === umount 'root' partition
- umount /mnt
+   # mount btrfs 'root' subvolume
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PARTITION} /mnt
 
-eco === mount btrfs 'root' subvolume
- mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PART} /mnt
+   # create folders to mount home and var subvolumes
+   mkdir -p /mnt/{boot/efi,home,var}
 
-eco === create folders to mount home and var subvolumes
- mkdir -p /mnt/{boot/efi,home,var}
+   # mount 'home' subvloume
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home ${ROOT_PARTITION} /mnt/home
 
-eco === mount 'home' subvloume
- mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home ${ROOT_PART} /mnt/home
+   # mount 'var' subvolume
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var ${ROOT_PARTITION} /mnt/var
+}
 
-eco === mount 'var' subvolume
- mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var ${ROOT_PART} /mnt/var
+ext4_fstype() {
+   # formate 'root' partition to btrfs file system
+   [[ "${FORMATE_ROOT_PARTITION}" == "yes" ]] && mkfs.ext4 ${ROOT_PARTITION}
 
-eco === mount 'EFI' partition
- mount ${BOOT_PART} /mnt/boot/efi
+   # formate 'root' partition to btrfs file system
+   [[ "${FORMATE_HOME_PARTITION}" == "yes" ]] && mkfs.ext4 ${HOME_PARTITION}
 
-eco === sync time
- timedatectl set-ntp true
+   # mount 'root' partition
+   mount ${ROOT_PARTITION} /mnt
 
-eco === install arch linux base
- pacstrap /mnt $(awk '/^\[B\]/ {print $2}' ${PACKAGES_LIST})
+   mkdir -p /mnt/home
+   mkdir -p /mnt/boot/efi
 
-eco === generate an fstab file
- genfstab -U /mnt >> /mnt/etc/fstab
+   # mount 'home' partition
+   mount ${HOME_PARTITION} /mnt/home
+}
 
-eco === creat post script
- awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
- cp -f pkg.txt /mnt
+# mount 'EFI' partition
+mount ${BOOT_PARTITION} /mnt/boot/efi
 
-eco === arch-chroot
- arch-chroot /mnt bash postinstall.sh
+# sync time
+timedatectl set-ntp true
 
-eco === exit script
- exit
+# install arch linux base
+pacstrap /mnt ${BASE_PACKAGES}
+
+# generate an fstab file
+genfstab -U /mnt >> /mnt/etc/fstab
+
+# creat post script
+awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
+cp -f pkg.txt /mnt
+
+# arch-chroot
+arch-chroot /mnt bash postinstall.sh
+
+# exit script
+exit
 
 echo =======[ ARCH LINUX POST INSTALL ]================================================================================
 
-# wrapper to print out 
- eco(){ echo -e "\e[93m${*}\e[0m"
- }
+WM_PACKAGES=( bspwm sxhkd alacritty firefox xorg-server xorg-xinit xorg-xbacklight xorg-apps xdg-utils xdg-user-dirs xclip pipewire pipewire-jack pipewire-alsa pipewire-pulse pulsemixer wireplumber htop glances sxiv git aria2 curl transmission-gtk zola ranger rofi rofi-calc rofi-emoji rofimoji dmenu fzf ulauncher polybar dunst betterlockscreen	feh xfce-polkit quickemu inotify-tools man-db zip unzip 7-zip xarchiver auto-cpufreq dash android-tools papirus-icon-theme	gnome-themes-extra lxappearance qt5ct ttf-dejavu ttf-liberation ttf-font-awesome mpv mpd mpc ncmpcpp xfce4-terminal pcmanfm mate-calc palnk code vim neovim leafpad gparted mtpfs gvfs-mtp jmtpfs gvfs-gphoto2 ntfs-3g ntfs3-dkms timeshift  )
+AUR_PACKAGES=( python-pywal )
 
-PACKAGES_LIST=pkg.txt
-
-eco === enter info
+# enter info
 read -p " Enter your userName: " userName
 read -p " Enter your hostName: " hostName
 read -p " Enter passWord: " passWord
 
-eco === clear screen 
- printf '\033c'
+# clear screen 
+printf '\033c'
 
-eco === Set time zone
- ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+# Set time zone
+ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
 
-eco === Run hwclock to generate /etc/adjtime
- hwclock --systohc
+# Run hwclock to generate /etc/adjtime
+hwclock --systohc
 
-eco === sync time
- timedatectl set-ntp true
+# sync time
+timedatectl set-ntp true
 
-eco === Edit /etc/locale.gen and uncomment en_US.UTF-8 UTF-8 and other needed locales.
- echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+# Edit /etc/locale.gen and uncomment en_US.UTF-8 UTF-8 and other needed locales.
+echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 
-eco === Generate the locales 
- locale-gen
+# Generate the locales 
+locale-gen
 
-eco === Edit locale.conf
- echo "LANG=en_US.UTF-8" > /etc/locale.conf
+# Edit locale.conf
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
-eco === Set the console keyboard layout
- echo "KEYMAP=us" > /etc/vconsole.conf
+# Set the console keyboard layout
+echo "KEYMAP=us" > /etc/vconsole.conf
 
-eco === Set hostname
- echo "${hostName}" > /etc/hostname
+# Set hostname
+echo "${hostName}" > /etc/hostname
 
-eco === Create /etc/hots file
- echo "127.0.0.1       localhost"  > /etc/hosts
- echo "::1             localhost" >> /etc/hosts
- echo "127.0.1.1       ${hostName}.localdomain ${hostName}" >> /etc/hosts
+# Create /etc/hots file
+echo "127.0.0.1       localhost"  > /etc/hosts
+echo "::1             localhost" >> /etc/hosts
+echo "127.0.1.1       ${hostName}.localdomain ${hostName}" >> /etc/hosts
 
-eco === recreate the initramfs image
- mkinitcpio -P
+# recreate the initramfs image
+mkinitcpio -P
 
-eco === Set root password
- echo root:${passWord} | chpasswd
+# Set root password
+echo root:${passWord} | chpasswd
 
-eco === Install grub bootloader
- grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchGRUB
- sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
- grub-mkconfig -o /boot/grub/grub.cfg
+# Install grub bootloader
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchGRUB
+sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
+grub-mkconfig -o /boot/grub/grub.cfg
 
-eco === Create user
- useradd -m -G wheel -s /bin/bash ${userName}
+# Create user
+useradd -m -G wheel -s /bin/bash ${userName}
 
-eco === Set user password
- echo "${userName}:${passWord}" | chpasswd
+# Set user password
+echo "${userName}:${passWord}" | chpasswd
 
-eco === install arch packages
-# pacman --noconfirm --needed -S $(awk '/^\[\*\]/ {print $2}' ${PACKAGES_LIST})
+# install arch packages
+pacman --noconfirm --needed -S ${WM_PACKAGES}
 
-eco === Enable services to start at Boot
- systemctl enable NetworkManager.service 
- systemctl enable cronie.service
+# install light weight aur helper 'baph'
+cd  /tmp && git clone https://gitlab.com/sachinhole/baph.git
+cd baph && make install 
 
+# clone dotfiles
+mkdir -p /home/.local && cd /home/local
+git clone https://github.com/sachinhole7/mydots.git
 
+# install aur packages
+#
+
+# Enable services to start at Boot
+systemctl enable NetworkManager.service 
+systemctl enable cronie.service
+systemctl enable getty.service 
+
+exit 
+
+echo =======[ THE END ]=======================================================================================
