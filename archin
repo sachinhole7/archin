@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -exn
+set -ex
 echo "= = =  arch linux installation script  = = =" 
 
 #  -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
