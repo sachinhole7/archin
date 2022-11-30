@@ -3,17 +3,21 @@
 set -ex
 echo "= = =  arch linux installation script  = = =" 
 
+# install fzf for menu
+pacman --needed --noconfirm -S fzf
+
 #  -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-DISK=/dev/nvme0n1
-BOOT_PARTITION=${DISK}p1
-ROOT_PARTITION=${DISK}p2
-HOME_PARTITION=${DISK}p3
+BOOT_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'boot' partition: " | cut -d' ' -f1)
+FORMATE_BOOT_PARTITION=$(echo -e "No\nYes" | fzf --promt "Formate ( ${BOOT_PARTITION} )'boot' partition: ")
 
-FORMATE_BOOT_PARTITION = yes
-FORMATE_ROOT_PARTITION = yes
-FORMATE_HOME_PARTITION = yes
-FILESYTEM_TYPE = ext4            # ext4 / btrfs
+ROOT_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'root' partition: " | cut -d' ' -f1)
+FORMATE_ROOT_PARTITION=$(echo -e "Yes\nNo" | fzf --promt "Formate ( ${ROOT_PARTITION} )'root' partition: ")
+
+HOME_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'home' partition: " | cut -d' ' -f1)
+FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --promt "Formate ( ${HOME_PARTITION} )'home' partition: ")
+
+FILESYTEM_TYPE=$(echo -e "ext4\nbtrfs" | fzf --prompt "Choose file system type: ")
 
 # packages
 BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode grub efibootmgr networkmanager cronie git )
@@ -34,6 +38,7 @@ btrfs_fstype() {
    btrfs su cr /mnt/@                                     # create root subvol
    btrfs su cr /mnt/@home                                 # create home subvol
    btrfs su cr /mnt/@var                                  # create var  subvol
+   btrfs su cr /mnt/@swap                                 # create swap subvol
 
    # umount 'root' partition
    umount /mnt
@@ -42,13 +47,16 @@ btrfs_fstype() {
    mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PARTITION} /mnt
 
    # create folders to mount home and var subvolumes
-   mkdir -p /mnt/{boot/efi,home,var}
+   mkdir -p /mnt/{boot/efi,home,var,swap}
 
    # mount 'home' subvloume
    mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home ${ROOT_PARTITION} /mnt/home
 
    # mount 'var' subvolume
    mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var ${ROOT_PARTITION} /mnt/var
+   
+   # mount 'var' subvolume
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@swap ${ROOT_PARTITION} /mnt/swap
 }
 
 ext4_fstype() {
@@ -67,6 +75,10 @@ ext4_fstype() {
    # mount 'home' partition
    mount ${HOME_PARTITION} /mnt/home
 }
+
+# formate filesystem
+[[ ${FILESYTEM_TYPE} == "ext4" ]] && ext4_fstype
+[[ ${FILESYTEM_TYPE} == "btrfs" ]] && btrfs_fstype
 
 # mount 'EFI' partition
 mount ${BOOT_PARTITION} /mnt/boot/efi
