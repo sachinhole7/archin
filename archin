@@ -1,10 +1,12 @@
 #!/bin/bash
 
-set -ex
+set -exn
 echo "= = =  arch linux installation script  = = =" 
 
 # install fzf for menu
-pacman --needed --noconfirm -S fzf
+pacman --needed --noconfirm -S fzf archlinux-keyring
+
+sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 11/" /etc/pacman.conf
 
 #  -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -20,7 +22,7 @@ FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --promt "Formate ( ${HOME_PARTI
 FILESYTEM_TYPE=$(echo -e "ext4\nbtrfs" | fzf --prompt "Choose file system type: ")
 
 # packages
-BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode grub efibootmgr networkmanager cronie git )
+BASE_PACKAGES="base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -83,6 +85,9 @@ ext4_fstype() {
 # mount 'EFI' partition
 mount ${BOOT_PARTITION} /mnt/boot/efi
 
+# set us key layout
+loadkeys us
+
 # sync time
 timedatectl set-ntp true
 
@@ -94,13 +99,14 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 # creat post script
 awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
-cp -f pkg.txt /mnt
+chmod +x /mnt/postinstall.sh
+# cp -f pkg.txt /mnt
 
 # arch-chroot
-arch-chroot /mnt bash postinstall.sh
+arch-chroot /mnt ./postinstall.sh
 
-# exit script
-exit
+# reboot
+[[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to 'reboot': ") == "Yes" ]] && umount -a && reboot
 
 echo =======[ ARCH LINUX POST INSTALL ]================================================================================
 
@@ -120,9 +126,6 @@ ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
 
 # Run hwclock to generate /etc/adjtime
 hwclock --systohc
-
-# sync time
-timedatectl set-ntp true
 
 # Edit /etc/locale.gen and uncomment en_US.UTF-8 UTF-8 and other needed locales.
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
@@ -151,6 +154,7 @@ mkinitcpio -P
 echo root:${passWord} | chpasswd
 
 # Install grub bootloader
+pacman --noconfirm --needed -S grub efibotmgr os-prober 
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchGRUB
 sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
@@ -161,8 +165,15 @@ useradd -m -G wheel -s /bin/bash ${userName}
 # Set user password
 echo "${userName}:${passWord}" | chpasswd
 
+# add user to sudoers file
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
 # install arch packages
-pacman --noconfirm --needed -S ${WM_PACKAGES}
+pacman --noconfirm --needed -S dash 
+
+# set dash shell
+rm /bin/sh
+ln -sf /usr/bin/dash /bin/sh
 
 # install light weight aur helper 'baph'
 cd  /tmp && git clone https://gitlab.com/sachinhole/baph.git
@@ -180,6 +191,6 @@ systemctl enable NetworkManager.service
 systemctl enable cronie.service
 systemctl enable getty.service 
 
-exit 
+[[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to exit: ") == "Yes" ]] && exit
 
 echo =======[ THE END ]=======================================================================================
