@@ -10,24 +10,24 @@ sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 11/" /etc/pacman.conf
 
 #  -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-BOOT_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'boot' partition: " | cut -d' ' -f1)
-FORMATE_BOOT_PARTITION=$(echo -e "No\nYes" | fzf --promt "Formate ( ${BOOT_PARTITION} )'boot' partition: ")
+BOOT_PARTITION=/dev/$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'boot' partition: " | cut -d' ' -f1)
+FORMATE_BOOT_PARTITION=$(echo -e "No\nYes" | fzf --prompt "Formate ( ${BOOT_PARTITION} )'boot' partition: ")
 
-ROOT_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'root' partition: " | cut -d' ' -f1)
-FORMATE_ROOT_PARTITION=$(echo -e "Yes\nNo" | fzf --promt "Formate ( ${ROOT_PARTITION} )'root' partition: ")
+ROOT_PARTITION=/dev/$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'root' partition: " | cut -d' ' -f1)
+FORMATE_ROOT_PARTITION=$(echo -e "Yes\nNo" | fzf --prompt "Formate ( ${ROOT_PARTITION} )'root' partition: ")
 
-HOME_PARTITION=$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'home' partition: " | cut -d' ' -f1)
-FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --promt "Formate ( ${HOME_PARTITION} )'home' partition: ")
+HOME_PARTITION=/dev/$(lsblk -r | grep "part" | awk '{print $1"   "$4}' | fzf --prompt "Choose 'home' partition: " | cut -d' ' -f1)
+FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --prompt "Formate ( ${HOME_PARTITION} )'home' partition: ")
 
 FILESYTEM_TYPE=$(echo -e "ext4\nbtrfs" | fzf --prompt "Choose file system type: ")
 
 # packages
-BASE_PACKAGES="base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf"
+BASE_PACKAGES="base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf grub efibootmgr os-prober"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # formate EFI/boot parition to vfat 'BOOT_PARTITION'
-[[ "${FORMATE_BOOT_PARTITION}" == "yes" ]] && mkfs.vfat ${BOOT_PARTITION}
+[[ "${FORMATE_BOOT_PARTITION}" == "Yes" ]] && mkfs.vfat ${BOOT_PARTITION}
 
 btrfs_fstype() {
    # formate 'root' partition to btrfs file system
@@ -62,11 +62,11 @@ btrfs_fstype() {
 }
 
 ext4_fstype() {
-   # formate 'root' partition to btrfs file system
-   [[ "${FORMATE_ROOT_PARTITION}" == "yes" ]] && mkfs.ext4 ${ROOT_PARTITION}
+   # formate 'root' partition to ext4 file system
+   [[ "${FORMATE_ROOT_PARTITION}" == "Yes" ]] && mkfs.ext4 ${ROOT_PARTITION}
 
-   # formate 'root' partition to btrfs file system
-   [[ "${FORMATE_HOME_PARTITION}" == "yes" ]] && mkfs.ext4 ${HOME_PARTITION}
+   # formate 'home' partition to ext4 file system
+   [[ "${FORMATE_HOME_PARTITION}" == "Yes" ]] && mkfs.ext4 ${HOME_PARTITION}
 
    # mount 'root' partition
    mount ${ROOT_PARTITION} /mnt
@@ -95,7 +95,7 @@ timedatectl set-ntp true
 pacstrap /mnt ${BASE_PACKAGES}
 
 # generate an fstab file
-genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U /mnt > /mnt/etc/fstab
 
 # creat post script
 awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
@@ -106,7 +106,7 @@ chmod +x /mnt/postinstall.sh
 arch-chroot /mnt ./postinstall.sh
 
 # reboot
-[[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to 'reboot': ") == "Yes" ]] && umount -a && reboot
+[[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to 'reboot': ") == "Yes" ]] && reboot
 
 echo =======[ ARCH LINUX POST INSTALL ]================================================================================
 
@@ -114,12 +114,9 @@ WM_PACKAGES=( bspwm sxhkd alacritty firefox xorg-server xorg-xinit xorg-xbacklig
 AUR_PACKAGES=( python-pywal )
 
 # enter info
-read -p " Enter your userName: " userName
 read -p " Enter your hostName: " hostName
+read -p " Enter your userName: " userName
 read -p " Enter passWord: " passWord
-
-# clear screen 
-printf '\033c'
 
 # Set time zone
 ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
@@ -154,8 +151,7 @@ mkinitcpio -P
 echo root:${passWord} | chpasswd
 
 # Install grub bootloader
-pacman --noconfirm --needed -S grub efibotmgr os-prober 
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchGRUB
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=archlinux
 sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 
