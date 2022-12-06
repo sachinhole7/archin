@@ -176,7 +176,7 @@ cd  /tmp && git clone https://gitlab.com/sachinhole/baph.git
 cd baph && make install 
 
 # clone dotfiles
-mkdir -p /home/.local && cd /home/local
+mkdir -p /home/${userName}/.local && cd /home/${userName}/.local
 git clone https://github.com/sachinhole7/mydots.git
 
 # install aur packages
