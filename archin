@@ -22,19 +22,20 @@ FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --prompt "Formate ( ${HOME_PART
 FILESYTEM_TYPE=$(echo -e "ext4\nbtrfs" | fzf --prompt "Choose file system type: ")
 
 # packages
-BASE_PACKAGES="base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf grub efibootmgr os-prober"
+BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf grub efibootmgr os-prober dash )
+# WM_PACKAGES=( bspwm sxhkd alacritty firefox xorg-server xorg-xinit xorg-xbacklight xorg-apps xdg-utils xdg-user-dirs xclip pipewire pipewire-jack pipewire-alsa pipewire-pulse pulsemixer wireplumber htop glances sxiv git aria2 curl transmission-gtk ranger rofi dmenu fzf ulauncher polybar dunst betterlockscreen feh xfce-polkit quickemu inotify-tools man-db zip unzip 7-zip xarchiver auto-cpufreq dash android-tools papirus-icon-theme	gnome-themes-extra lxappearance qt5ct ttf-dejavu ttf-liberation ttf-font-awesome mpv mpd mpc ncmpcpp xfce4-terminal pcmanfm mate-calc palnk code vim neovim leafpad gparted mtpfs gvfs-mtp jmtpfs gvfs-gphoto2 ntfs-3g ntfs3-dkms timeshift  )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # formate EFI/boot parition to vfat 'BOOT_PARTITION'
-[[ "${FORMATE_BOOT_PARTITION}" == "Yes" ]] && mkfs.vfat ${BOOT_PARTITION}
+[[ "${FORMATE_BOOT_PARTITION}" == "Yes" ]] && mkfs.vfat "${BOOT_PARTITION}"
 
 btrfs_fstype() {
    # formate 'root' partition to btrfs file system
-   mkfs.btrfs -f ${ROOT_PARTITION} 
+   mkfs.btrfs -f "${ROOT_PARTITION}" 
 
    # mount 'root' partition
-   mount ${ROOT_PARTITION} /mnt
+   mount "${ROOT_PARTITION}" /mnt
 
    # create btrfs subvolumes
    btrfs su cr /mnt/@                                     # create root subvol
@@ -46,44 +47,44 @@ btrfs_fstype() {
    umount /mnt
 
    # mount btrfs 'root' subvolume
-   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ ${ROOT_PARTITION} /mnt
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@ "${ROOT_PARTITION}" /mnt
 
    # create folders to mount home and var subvolumes
    mkdir -p /mnt/{boot/efi,home,var,swap}
 
    # mount 'home' subvloume
-   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home ${ROOT_PARTITION} /mnt/home
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@home "${ROOT_PARTITION}" /mnt/home
 
    # mount 'var' subvolume
-   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var ${ROOT_PARTITION} /mnt/var
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@var "${ROOT_PARTITION}" /mnt/var
    
-   # mount 'var' subvolume
-   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@swap ${ROOT_PARTITION} /mnt/swap
+   # mount 'var' subvolume 
+   mount -o autodefrag,compress=zstd,discard=async,noatime,space_cache=v2,ssd,ssd_spread,subvol=@swap "${ROOT_PARTITION}" /mnt/swap
 }
 
 ext4_fstype() {
    # formate 'root' partition to ext4 file system
-   [[ "${FORMATE_ROOT_PARTITION}" == "Yes" ]] && mkfs.ext4 ${ROOT_PARTITION}
+   [[ "${FORMATE_ROOT_PARTITION}" == "Yes" ]] && mkfs.ext4 "${ROOT_PARTITION}"
 
    # formate 'home' partition to ext4 file system
-   [[ "${FORMATE_HOME_PARTITION}" == "Yes" ]] && mkfs.ext4 ${HOME_PARTITION}
+   [[ "${FORMATE_HOME_PARTITION}" == "Yes" ]] && mkfs.ext4 "${HOME_PARTITION}"
 
    # mount 'root' partition
-   mount ${ROOT_PARTITION} /mnt
+   mount "${ROOT_PARTITION}" /mnt
 
    mkdir -p /mnt/home
    mkdir -p /mnt/boot/efi
 
    # mount 'home' partition
-   mount ${HOME_PARTITION} /mnt/home
+   mount "${HOME_PARTITION}" /mnt/home
 }
 
 # formate filesystem
-[[ ${FILESYTEM_TYPE} == "ext4" ]] && ext4_fstype
-[[ ${FILESYTEM_TYPE} == "btrfs" ]] && btrfs_fstype
+[[ "${FILESYTEM_TYPE}" == "ext4" ]] && ext4_fstype
+[[ "${FILESYTEM_TYPE}" == "btrfs" ]] && btrfs_fstype
 
 # mount 'EFI' partition
-mount ${BOOT_PARTITION} /mnt/boot/efi
+mount "${BOOT_PARTITION}" /mnt/boot/efi
 
 # set us key layout
 loadkeys us
@@ -92,15 +93,14 @@ loadkeys us
 timedatectl set-ntp true
 
 # install arch linux base
-pacstrap /mnt ${BASE_PACKAGES}
+pacstrap /mnt "${BASE_PACKAGES[@]}"
 
 # generate an fstab file
 genfstab -U /mnt > /mnt/etc/fstab
 
 # creat post script
-awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' ${0} > /mnt/postinstall.sh
+awk '/\[ ARCH LINUX POST INSTALL \]/','/#\[ THE END \]/' "${0}" > /mnt/postinstall.sh
 chmod +x /mnt/postinstall.sh
-# cp -f pkg.txt /mnt
 
 # arch-chroot
 arch-chroot /mnt ./postinstall.sh
@@ -108,15 +108,12 @@ arch-chroot /mnt ./postinstall.sh
 # reboot
 [[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to 'reboot': ") == "Yes" ]] && reboot
 
-echo =======[ ARCH LINUX POST INSTALL ]================================================================================
-
-WM_PACKAGES=( bspwm sxhkd alacritty firefox xorg-server xorg-xinit xorg-xbacklight xorg-apps xdg-utils xdg-user-dirs xclip pipewire pipewire-jack pipewire-alsa pipewire-pulse pulsemixer wireplumber htop glances sxiv git aria2 curl transmission-gtk zola ranger rofi rofi-calc rofi-emoji rofimoji dmenu fzf ulauncher polybar dunst betterlockscreen	feh xfce-polkit quickemu inotify-tools man-db zip unzip 7-zip xarchiver auto-cpufreq dash android-tools papirus-icon-theme	gnome-themes-extra lxappearance qt5ct ttf-dejavu ttf-liberation ttf-font-awesome mpv mpd mpc ncmpcpp xfce4-terminal pcmanfm mate-calc palnk code vim neovim leafpad gparted mtpfs gvfs-mtp jmtpfs gvfs-gphoto2 ntfs-3g ntfs3-dkms timeshift  )
-AUR_PACKAGES=( python-pywal )
+# [ ARCH LINUX POST INSTALL ] = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
 # enter info
-read -p " Enter your hostName: " hostName
-read -p " Enter your userName: " userName
-read -p " Enter passWord: " passWord
+read -rp " Enter your hostName: " hostName
+read -rp " Enter your userName: " userName
+read -rp " Enter passWord: " passWord
 
 # Set time zone
 ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
@@ -148,7 +145,7 @@ echo "127.0.1.1       ${hostName}.localdomain ${hostName}" >> /etc/hosts
 mkinitcpio -P
 
 # Set root password
-echo root:${passWord} | chpasswd
+echo root:"${passWord}" | chpasswd
 
 # Install grub bootloader
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=archlinux
@@ -156,7 +153,7 @@ sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Create user
-useradd -m -G wheel -s /bin/bash ${userName}
+useradd -m -G wheel -s /bin/bash "${userName}"
 
 # Set user password
 echo "${userName}:${passWord}" | chpasswd
@@ -164,28 +161,24 @@ echo "${userName}:${passWord}" | chpasswd
 # add user to sudoers file
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# install arch packages
-pacman --noconfirm --needed -S dash 
-
 # set dash shell
 rm /bin/sh
 ln -sf /usr/bin/dash /bin/sh
 
-# install light weight aur helper 'baph'
-cd  /tmp && git clone https://gitlab.com/sachinhole/baph.git
-cd baph && make install 
+# install light weight aur helper 'pikaur'
+cd  /tmp && git clone https://aur.archlinux.org/pikaur.git && \
+cd /tmp/pikaur && makepkg -si 
 
 # clone dotfiles
-mkdir -p /home/${userName}/.local && cd /home/${userName}/.local
+mkdir -p /home/"${userName}"/.local && cd /home/"${userName}"/.local
 git clone https://github.com/sachinhole7/mydots.git
 
-# install aur packages
-#
+# setup dofiles
+bash setup
 
 # Enable services to start at Boot
 systemctl enable NetworkManager.service 
 systemctl enable cronie.service
-systemctl enable getty.service 
 
 [[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to exit: ") == "Yes" ]] && exit
 
