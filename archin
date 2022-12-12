@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 echo "= = =  arch linux installation script  = = =" 
 
 # install fzf for menu
@@ -22,7 +22,7 @@ FORMATE_HOME_PARTITION=$(echo -e "No\nYes" | fzf --prompt "Formate ( ${HOME_PART
 FILESYTEM_TYPE=$(echo -e "ext4\nbtrfs" | fzf --prompt "Choose file system type: ")
 
 # packages
-BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager cronie git fzf grub efibootmgr os-prober dash )
+BASE_PACKAGES=( base base-devel linux-firmware linux-zen linux-zen-headers linux-lts linux-lts-headers intel-ucode networkmanager bluez bluez-utils cronie git fzf grub efibootmgr os-prober dash )
 # WM_PACKAGES=( bspwm sxhkd alacritty firefox xorg-server xorg-xinit xorg-xbacklight xorg-apps xdg-utils xdg-user-dirs xclip pipewire pipewire-jack pipewire-alsa pipewire-pulse pulsemixer wireplumber htop glances sxiv git aria2 curl transmission-gtk ranger rofi dmenu fzf ulauncher polybar dunst betterlockscreen feh xfce-polkit quickemu inotify-tools man-db zip unzip 7-zip xarchiver auto-cpufreq dash android-tools papirus-icon-theme	gnome-themes-extra lxappearance qt5ct ttf-dejavu ttf-liberation ttf-font-awesome mpv mpd mpc ncmpcpp xfce4-terminal pcmanfm mate-calc palnk code vim neovim leafpad gparted mtpfs gvfs-mtp jmtpfs gvfs-gphoto2 ntfs-3g ntfs3-dkms timeshift  )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -165,9 +165,9 @@ echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 rm /bin/sh
 ln -sf /usr/bin/dash /bin/sh
 
-# install light weight aur helper 'pikaur'
-cd  /tmp && git clone https://aur.archlinux.org/pikaur.git && \
-cd /tmp/pikaur && makepkg -si 
+# chane user 
+su "${userName}"
+#---------------------------------------------------------------------------------------
 
 # clone dotfiles
 mkdir -p /home/"${userName}"/.local && cd /home/"${userName}"/.local
@@ -176,9 +176,14 @@ git clone https://github.com/sachinhole7/mydots.git
 # setup dofiles
 bash setup
 
+#---------------------------------------------------------------------------------------
+# exit from user
+exit
+
 # Enable services to start at Boot
 systemctl enable NetworkManager.service 
 systemctl enable cronie.service
+systemctl enable bluetooth.service
 
 [[ $(echo -e "Yes\nNo" | fzf --prompt "Do you want to exit: ") == "Yes" ]] && exit
 
